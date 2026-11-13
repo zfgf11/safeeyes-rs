@@ -21,6 +21,7 @@ use crate::system::notify::send_pre_break_notification;
 use crate::system::session::{SessionEvent, spawn_session_monitors};
 use crate::tray::{SafeEyesTray, TrayCommand, TraySnapshot};
 use crate::ui::overlay::{BreakOverlayManager, OverlayAction};
+use crate::ui::settings::{SettingsAction, SettingsWindowManager};
 
 const APP_ID: &str = "io.github.safeeyes_rs";
 
@@ -48,6 +49,8 @@ struct AppRuntime {
     core: CoreState,
     overlay: BreakOverlayManager,
     overlay_tx: Sender<OverlayAction>,
+    settings: SettingsWindowManager,
+    settings_tx: Sender<SettingsAction>,
     tray_handle: Option<TrayHandle<SafeEyesTray>>,
     idle_watcher: Option<IdleWatcherHandle>,
     idle_tx: Sender<(u64, IdleEvent)>,
@@ -103,6 +106,7 @@ fn start_application(app: &Application) {
     let (session_tx, session_rx) = async_channel::unbounded::<SessionEvent>();
     let (idle_tx, idle_rx) = async_channel::unbounded::<(u64, IdleEvent)>();
     let (overlay_tx, overlay_rx) = async_channel::unbounded::<OverlayAction>();
+    let (settings_tx, settings_rx) = async_channel::unbounded::<SettingsAction>();
 
     let (core, initial_effects) = CoreState::new(config.clone(), Instant::now());
     let initial_snapshot = TraySnapshot {
@@ -130,6 +134,8 @@ fn start_application(app: &Application) {
         core,
         overlay: BreakOverlayManager::new(),
         overlay_tx,
+        settings: SettingsWindowManager::new(),
+        settings_tx,
         tray_handle,
         idle_watcher,
         idle_tx,
@@ -179,6 +185,16 @@ fn start_application(app: &Application) {
         main_ctx.spawn_local(async move {
             while let Ok(action) = overlay_rx.recv().await {
                 handle_overlay_action(&rt, action);
+            }
+        });
+    }
+
+    // Preferences window events
+    {
+        let rt = Rc::clone(&runtime);
+        main_ctx.spawn_local(async move {
+            while let Ok(action) = settings_rx.recv().await {
+                handle_settings_action(&rt, action);
             }
         });
     }
@@ -280,6 +296,11 @@ fn handle_tray_command(rt: &Rc<RefCell<AppRuntime>>, cmd: TrayCommand) {
             let effects = rt.borrow_mut().core.take_break_now(BreakKind::Long);
             apply_effects(rt, effects);
         }
+        TrayCommand::OpenPreferences => {
+            let r = rt.borrow();
+            r.settings
+                .open(&r.app, r.core.config(), &r.settings_tx);
+        }
         TrayCommand::ReloadConfig => {
             reload_config(rt, now);
         }
@@ -325,13 +346,48 @@ fn reload_config(rt: &Rc<RefCell<AppRuntime>>, now: Instant) {
         }
     };
 
+    info!("reloaded config from {}", path.display());
+    apply_new_config(rt, new_cfg, Some(path), now);
+}
+
+fn handle_settings_action(rt: &Rc<RefCell<AppRuntime>>, action: SettingsAction) {
+    let now = Instant::now();
+    match action {
+        SettingsAction::Save(new_cfg) => {
+            let target_path = rt
+                .borrow()
+                .config_path
+                .clone()
+                .or_else(|| Config::config_path().ok());
+
+            if let Some(ref path) = target_path {
+                if let Err(err) = new_cfg.save_to_path(path) {
+                    error!("failed to save preferences to {}: {err}", path.display());
+                } else {
+                    info!("saved preferences to {}", path.display());
+                }
+            }
+
+            apply_new_config(rt, new_cfg, target_path, now);
+        }
+    }
+}
+
+fn apply_new_config(
+    rt: &Rc<RefCell<AppRuntime>>,
+    new_cfg: Config,
+    new_path: Option<PathBuf>,
+    now: Instant,
+) {
     let effects = {
         let mut r = rt.borrow_mut();
         let old_idle_secs = r.core.config().idle_pause_seconds;
         let old_mode = r.core.config().timer_mode;
         let new_idle_secs = new_cfg.idle_pause_seconds;
         let new_mode = new_cfg.timer_mode;
-        r.config_path = Some(path.clone());
+        if let Some(path) = new_path {
+            r.config_path = Some(path);
+        }
 
         if old_idle_secs != new_idle_secs || old_mode != new_mode {
             if let Some(watcher) = r.idle_watcher.take() {
@@ -348,7 +404,6 @@ fn reload_config(rt: &Rc<RefCell<AppRuntime>>, now: Instant) {
         r.core.update_config(new_cfg, now)
     };
 
-    info!("reloaded config from {}", path.display());
     apply_effects(rt, effects);
 }
 

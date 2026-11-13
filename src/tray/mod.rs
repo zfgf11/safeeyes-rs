@@ -15,6 +15,7 @@ pub enum TrayCommand {
     SetTimerMode(TimerMode),
     TakeShortBreakNow,
     TakeLongBreakNow,
+    OpenPreferences,
     ReloadConfig,
     OpenConfig,
     Quit,
@@ -77,11 +78,9 @@ impl Tray for SafeEyesTray {
     }
 
     fn status(&self) -> Status {
-        if self.snapshot.enabled {
-            Status::Active
-        } else {
-            Status::Passive
-        }
+        // Always stay Active so KDE/GNOME panels keep the disabled (red-slashed)
+        // icon visible rather than hiding it under Status::Passive.
+        Status::Active
     }
 
     fn icon_pixmap(&self) -> Vec<Icon> {
@@ -233,6 +232,16 @@ impl Tray for SafeEyesTray {
                 label: "Settings".to_string(),
                 icon_name: "preferences-system".to_string(),
                 submenu: vec![
+                    StandardItem {
+                        label: "Preferences...".to_string(),
+                        icon_name: "preferences-other".to_string(),
+                        activate: Box::new(|this: &mut Self| {
+                            this.send(TrayCommand::OpenPreferences)
+                        }),
+                        ..Default::default()
+                    }
+                    .into(),
+                    MenuItem::Separator,
                     StandardItem {
                         label: "Open config file".to_string(),
                         icon_name: "document-edit".to_string(),

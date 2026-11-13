@@ -189,6 +189,13 @@ impl Config {
         self.short_break_interval_minutes.saturating_mul(60)
     }
 
+    /// Saves this configuration to `path` after sanitizing values.
+    pub fn save_to_path(&self, path: &Path) -> Result<(), ConfigError> {
+        let mut sanitized = self.clone();
+        sanitized.sanitize();
+        Self::write_config_file(path, &sanitized)
+    }
+
     /// Persists an updated `timer_mode` into an existing config file while preserving comments.
     pub fn persist_timer_mode(path: &Path, mode: TimerMode) -> Result<(), ConfigError> {
         let mode_str = match mode {
