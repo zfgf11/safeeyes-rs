@@ -1,5 +1,5 @@
 Name:           safeeyes-rs
-Version:        0.1.4
+Version:        0.1.5
 Release:        1%{?dist}
 Summary:        Lightweight, native Wayland Rust rewrite of SafeEyes
 
@@ -41,6 +41,9 @@ cargo test --release --locked
 %{_datadir}/applications/%{name}.desktop
 
 %changelog
+* Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.5-1
+- Fix StatusNotifierItem tray registration inside Flatpak sandbox (`disable_dbus_name`)
+
 * Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.4-1
 - Add Flathub AppStream metadata, SVG icon, sandboxed chime fallback, and Flatpak manifest
 

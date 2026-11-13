@@ -43,7 +43,13 @@ impl SafeEyesTray {
             tx,
             snapshot: initial,
         };
-        match tray.assume_sni_available(true).spawn() {
+        let is_sandboxed = std::path::Path::new("/.flatpak-info").exists()
+            || std::env::var_os("FLATPAK_ID").is_some();
+        match tray
+            .disable_dbus_name(is_sandboxed)
+            .assume_sni_available(true)
+            .spawn()
+        {
             Ok(handle) => {
                 info!("system tray (StatusNotifierItem) initialized");
                 Some(handle)
