@@ -7,11 +7,13 @@ on:
       - 'packaging/flathub/**'
       - 'Cargo.lock'
       - 'src/**'
+      - '.github/workflows/flatpak.yml'
   pull_request:
     paths:
       - 'packaging/flathub/**'
       - 'Cargo.lock'
       - 'src/**'
+      - '.github/workflows/flatpak.yml'
   workflow_dispatch:
 
 jobs:
