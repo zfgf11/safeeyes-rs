@@ -28,6 +28,7 @@ modules:
       - -Dexamples=false
       - -Ddocs=false
       - -Dtests=false
+      - -Dsmoke-tests=false
       - -Dintrospection=false
       - -Dvapi=false
     sources:
