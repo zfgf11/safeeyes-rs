@@ -23,23 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Flatpak tools & runtimes
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder appstream desktop-file-utils
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub \
-            org.gnome.Platform//51 \
-            org.gnome.Sdk//51 \
-            org.freedesktop.Sdk.Extension.rust-stable//26.08
-
       - name: Validate desktop and AppStream metadata
         run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends appstream desktop-file-utils
           desktop-file-validate packaging/flathub/io.github.zfgf11.safeeyes_rs.desktop
           appstreamcli validate --pedantic --no-net packaging/flathub/io.github.zfgf11.safeeyes_rs.metainfo.xml
 
-      - name: Prepare local-source Flatpak manifest for CI
+      - name: Build Flatpak bundle in privileged Fedora container
         run: |
+          mkdir -p dist
           python3 - <<'EOF'
           import pathlib
           p = pathlib.Path("packaging/flathub/io.github.zfgf11.safeeyes_rs.yml")
@@ -50,25 +43,37 @@ jobs:
           pathlib.Path("packaging/flathub/ci-manifest.yml").write_text(ci_text)
           EOF
 
-      - name: Build Flatpak and export bundle
-        run: |
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
-          flatpak-builder \
-            --user \
-            --force-clean \
-            --disable-rofiles-fuse \
-            --sandbox \
-            --install-deps-from=flathub \
-            --repo=/tmp/flatpak-repo \
-            /tmp/flatpak-build \
-            packaging/flathub/ci-manifest.yml
-          flatpak build-bundle \
-            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
-            /tmp/flatpak-repo \
-            safeeyes-rs.flatpak \
-            io.github.zfgf11.safeeyes_rs
+          HOST_UID="$(id -u)"
+          HOST_GID="$(id -g)"
+          docker run --rm --privileged \
+            -v "$PWD:/work" \
+            -e HOST_UID="$HOST_UID" \
+            -e HOST_GID="$HOST_GID" \
+            -w /work \
+            fedora:latest \
+            bash -euo pipefail -c '
+              dnf install -y --setopt=install_weak_deps=False flatpak flatpak-builder
+              flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+              flatpak install -y --noninteractive flathub \
+                org.gnome.Platform//51 \
+                org.gnome.Sdk//51 \
+                org.freedesktop.Sdk.Extension.rust-stable//26.08
+              flatpak-builder \
+                --force-clean \
+                --disable-rofiles-fuse \
+                --sandbox \
+                --repo=/tmp/flatpak-repo \
+                /tmp/flatpak-build \
+                packaging/flathub/ci-manifest.yml
+              flatpak build-bundle \
+                --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
+                /tmp/flatpak-repo \
+                /work/dist/safeeyes-rs.flatpak \
+                io.github.zfgf11.safeeyes_rs
+              chown -R "${HOST_UID}:${HOST_GID}" /work/dist
+            '
 
       - uses: actions/upload-artifact@v4
         with:
           name: safeeyes-rs-flatpak-bundle
-          path: safeeyes-rs.flatpak
+          path: dist/safeeyes-rs.flatpak
