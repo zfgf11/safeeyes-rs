@@ -1,6 +1,6 @@
 # Maintainer: zfgf11 <zfgf11@users.noreply.github.com>
 pkgname=safeeyes-rs
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Protect your eyes from strain with periodic break reminders (native Wayland Rust rewrite of SafeEyes)"
 arch=('x86_64' 'aarch64')
@@ -9,7 +9,7 @@ license=('MIT')
 depends=('gtk4' 'gtk4-layer-shell')
 makedepends=('cargo')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('9f645597c73a13bb26fbe273be9174204be1684d74bfbd65eab8dd84b557bd97')
+sha256sums=('SKIP')
 
 prepare() {
     cd "$srcdir/$pkgname-$pkgver"

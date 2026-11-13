@@ -49,3 +49,4 @@ Must scale cleanly on **any screen size, DPI, or aspect ratio** (from small 13" 
 3. **Clean Separation:** Keep the state machine (`src/core/`), D-Bus/system integrations (`src/system/`), tray (`src/tray/`), and GTK4 overlay (`src/ui/`) decoupled.
 4. **Error Handling:** Avoid `.unwrap()` / `.expect()` in runtime paths; log errors cleanly with `tracing`.
 5. **Mandatory Verification:** Always run `cargo check` and `cargo clippy --all-targets` after changes and resolve all errors/warnings before finishing.
+6. **Release & Packaging Sync (COPR & AUR):** When releasing program changes, bump the version consistently across `Cargo.toml`, `packaging/safeeyes-rs.spec` (`Version` + `%changelog`), `packaging/aur/PKGBUILD` (`pkgver`), and `packaging/aur/.SRCINFO` (`pkgver` + `source` + `sha256sums`), then commit and tag `vX.Y.Z` so Fedora COPR can build `https://raw.githubusercontent.com/zfgf11/safeeyes-rs/vX.Y.Z/packaging/safeeyes-rs.spec`.

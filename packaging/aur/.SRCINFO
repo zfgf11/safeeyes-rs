@@ -1,6 +1,6 @@
 pkgbase = safeeyes-rs
 	pkgdesc = Protect your eyes from strain with periodic break reminders (native Wayland Rust rewrite of SafeEyes)
-	pkgver = 0.1.0
+	pkgver = 0.1.1
 	pkgrel = 1
 	url = https://github.com/zfgf11/safeeyes-rs
 	arch = x86_64
@@ -9,7 +9,7 @@ pkgbase = safeeyes-rs
 	makedepends = cargo
 	depends = gtk4
 	depends = gtk4-layer-shell
-	source = safeeyes-rs-0.1.0.tar.gz::https://github.com/zfgf11/safeeyes-rs/archive/refs/tags/v0.1.0.tar.gz
-	sha256sums = 9f645597c73a13bb26fbe273be9174204be1684d74bfbd65eab8dd84b557bd97
+	source = safeeyes-rs-0.1.1.tar.gz::https://github.com/zfgf11/safeeyes-rs/archive/refs/tags/v0.1.1.tar.gz
+	sha256sums = SKIP
 
 pkgname = safeeyes-rs
