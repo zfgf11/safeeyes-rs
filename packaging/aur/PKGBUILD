@@ -1,0 +1,39 @@
+# Maintainer: zfgf11 <zfgf11@users.noreply.github.com>
+pkgname=safeeyes-rs
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Protect your eyes from strain with periodic break reminders (native Wayland Rust rewrite of SafeEyes)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/zfgf11/safeeyes-rs"
+license=('MIT')
+depends=('gtk4' 'gtk4-layer-shell')
+makedepends=('cargo')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('9f645597c73a13bb26fbe273be9174204be1684d74bfbd65eab8dd84b557bd97')
+
+prepare() {
+    cd "$srcdir/$pkgname-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+    cd "$srcdir/$pkgname-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    cargo build --frozen --release
+}
+
+check() {
+    cd "$srcdir/$pkgname-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo test --frozen
+}
+
+package() {
+    cd "$srcdir/$pkgname-$pkgver"
+    install -Dm0755 -t "$pkgdir/usr/bin/" "target/release/$pkgname"
+    install -Dm0644 "packaging/$pkgname.desktop" "$pkgdir/usr/share/applications/$pkgname.desktop"
+    install -Dm0644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm0644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

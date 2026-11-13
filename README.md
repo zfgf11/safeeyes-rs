@@ -1,8 +1,8 @@
 # safeeyes-rs
 
-A lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgobinath/SafeEyes) for **KDE Plasma** and **GNOME**.
+Protect your eyes from strain with periodic break reminders and a clean, distraction-free fullscreen break overlay.
 
-`safeeyes-rs` preserves the familiar system tray workflow while delivering a modern, responsive fullscreen break overlay and event-driven zero-polling Wayland integration.
+`safeeyes-rs` is a lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgobinath/SafeEyes) for Linux (**KDE Plasma** and **GNOME**), preserving the familiar system tray workflow with event-driven, zero-polling Linux/Wayland integration.
 
 ## Features
 
@@ -19,7 +19,27 @@ A lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgo
   - Zero polling between breaks (single-shot GLib wakeups, D-Bus signal listeners for `org.freedesktop.ScreenSaver` and `org.freedesktop.login1`, and Wayland `ext-idle-notify-v1`).
   - Pre-break desktop notifications via `notify-rust` and lightweight chimes via `pw-play` / `paplay` / `canberra-gtk-play`.
 
-## Requirements
+## Installation
+
+### Fedora (COPR)
+
+Install and enable autostart in one command:
+
+```bash
+sudo dnf copr enable -y zfgf11/safeeyes-rs && sudo dnf install -y safeeyes-rs && mkdir -p ~/.config/autostart && cp /usr/share/applications/safeeyes-rs.desktop ~/.config/autostart/
+```
+
+### Arch Linux (PKGBUILD)
+
+Build and install directly from the included `PKGBUILD`:
+
+```bash
+git clone https://github.com/zfgf11/safeeyes-rs.git
+cd safeeyes-rs/packaging/aur
+makepkg -si
+```
+
+### Build from Source
 
 System development libraries for GTK 4 and `gtk4-layer-shell`:
 
@@ -36,20 +56,16 @@ System development libraries for GTK 4 and `gtk4-layer-shell`:
   sudo pacman -S gtk4 gtk4-layer-shell
   ```
 
-> **GNOME Note:** For the system tray icon to appear on GNOME, ensure the *AppIndicator and KStatusNotifierItem Support* extension is enabled.
-
-## Build & Run
+Build, run, or install into `~/.cargo/bin`:
 
 ```bash
 cargo build --release
 cargo run --release
-```
-
-To install locally into `~/.cargo/bin`:
-
-```bash
+# or install locally:
 cargo install --path .
 ```
+
+> **GNOME Note:** For the system tray icon to appear on GNOME, ensure the *AppIndicator and KStatusNotifierItem Support* extension is enabled.
 
 ## Configuration
 
@@ -61,4 +77,6 @@ $XDG_CONFIG_HOME/safeeyes-rs/config.toml   # usually ~/.config/safeeyes-rs/confi
 
 After editing `config.toml`, apply changes immediately via **Settings → Reload config** in the tray menu.
 
+## License
 
+[MIT](LICENSE)
