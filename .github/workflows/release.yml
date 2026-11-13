@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deb-and-tarball:
+    name: Build .deb and .tar.gz (Debian Trixie x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine release version
+        id: meta
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build .deb package and release tarball
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          mkdir -p dist
+          HOST_UID="$(id -u)"
+          HOST_GID="$(id -g)"
+          docker run --rm \
+            -v "$PWD:/work" \
+            -e VERSION="$VERSION" \
+            -e HOST_UID="$HOST_UID" \
+            -e HOST_GID="$HOST_GID" \
+            -w /work \
+            debian:trixie \
+            bash -euo pipefail -c '
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                ca-certificates curl build-essential pkg-config \
+                libgtk-4-dev libgtk4-layer-shell-dev dpkg-dev tar gzip
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+              export PATH="$HOME/.cargo/bin:$PATH"
+
+              cargo install cargo-deb --locked
+              cargo test --release --locked
+              cargo deb --locked
+
+              cp target/debian/*.deb dist/
+
+              PKG_DIR="/tmp/safeeyes-rs-${VERSION}"
+              install -Dm755 target/release/safeeyes-rs "${PKG_DIR}/bin/safeeyes-rs"
+              install -Dm644 packaging/safeeyes-rs.desktop "${PKG_DIR}/share/applications/safeeyes-rs.desktop"
+              install -Dm644 README.md "${PKG_DIR}/README.md"
+              install -Dm644 LICENSE "${PKG_DIR}/LICENSE"
+              tar -C /tmp -czf "dist/safeeyes-rs-v${VERSION}-linux-x86_64.tar.gz" "safeeyes-rs-${VERSION}"
+
+              chown -R "${HOST_UID}:${HOST_GID}" /work/target /work/dist
+            '
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debian-and-tarball
+          path: dist/*
+
+  build-rpm:
+    name: Build .rpm (Fedora x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build RPM from packaging/safeeyes-rs.spec
+        run: |
+          mkdir -p dist
+          VERSION=$(sed -n 's/^Version:[[:space:]]*//p' packaging/safeeyes-rs.spec | head -n1 | tr -d '[:space:]')
+          git archive --format=tar.gz --prefix="safeeyes-rs-${VERSION}/" -o "/tmp/safeeyes-rs-${VERSION}.tar.gz" HEAD
+          HOST_UID="$(id -u)"
+          HOST_GID="$(id -g)"
+          docker run --rm \
+            -v "$PWD:/work" \
+            -v "/tmp/safeeyes-rs-${VERSION}.tar.gz:/root/rpmbuild/SOURCES/safeeyes-rs-${VERSION}.tar.gz:ro" \
+            -e HOST_UID="$HOST_UID" \
+            -e HOST_GID="$HOST_GID" \
+            -w /work \
+            fedora:latest \
+            bash -euo pipefail -c '
+              dnf install -y --setopt=install_weak_deps=False \
+                rpm-build cargo rust gtk4-devel gtk4-layer-shell-devel
+              rpmbuild -bb packaging/safeeyes-rs.spec
+              cp /root/rpmbuild/RPMS/*/*.rpm /work/dist/
+              chown -R "${HOST_UID}:${HOST_GID}" /work/dist
+            '
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fedora-rpm
+          path: dist/*.rpm
+
+  publish:
+    name: Publish GitHub Release
+    needs: [build-deb-and-tarball, build-rpm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS.txt
+        working-directory: release-assets
+        run: sha256sum * > SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*

@@ -1,6 +1,6 @@
 [package]
 name = "safeeyes-rs"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "Lightweight, native Wayland Rust rewrite of SafeEyes for KDE Plasma and GNOME"
 license = "MIT"
@@ -25,3 +25,21 @@ thiserror = "2"
 lto = "thin"
 codegen-units = 1
 strip = true
+
+[package.metadata.deb]
+maintainer = "zfgf11 <zfgf11@users.noreply.github.com>"
+copyright = "2026, zfgf11"
+license-file = ["LICENSE", "0"]
+extended-description = """
+A lightweight, ultra-low-resource Rust rewrite of SafeEyes for Linux
+(KDE Plasma and GNOME on Wayland), featuring a native StatusNotifierItem
+system tray, responsive fullscreen break overlay, and event-driven idle
+and screen-lock integration."""
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/safeeyes-rs", "usr/bin/", "755"],
+    ["packaging/safeeyes-rs.desktop", "usr/share/applications/", "644"],
+    ["README.md", "usr/share/doc/safeeyes-rs/README.md", "644"],
+]

@@ -17,9 +17,11 @@ Protect your eyes from strain with periodic break reminders and a clean, distrac
 - **Native Wayland Fullscreen Overlay**
   - Uses `gtk4-layer-shell` (`Layer::Overlay`, `KeyboardMode::Exclusive`, multi-monitor) on KDE Plasma / wlroots compositors.
   - Automatic fallback to undecorated `gtk4::ApplicationWindow::fullscreen_on_monitor` on GNOME Mutter.
-  - Responsive layout with a large integer-second countdown (`tabular-nums`), top-right **Lock screen now** button, bottom **Skip** button with `Skipped X/Y breaks` counter, and `Esc` shortcut.
+  - Responsive layout with a large integer-second countdown (`tabular-nums`), top-right **Lock screen now** button, bottom **Skip** & **Snooze** buttons with `Skipped X/Y breaks` counter, and `Esc` shortcut.
 - **Cross-DE System Tray (`ksni` / StatusNotifierItem)**
-  - Next break status line, Enable/Disable toggle, timed disable (*15m / 30m / 1h / 2h / 4h* or until manually enabled), **Take a 15s break now**, **Take a 60s break now**, **Timer mode** switcher, Settings (*Open config file* / *Reload config*), and Quit.
+  - Next break status line, Enable/Disable toggle, timed disable (*15m / 30m / 1h / 2h / 4h* or until manually enabled), **Take a 15s break now**, **Take a 60s break now**, **Timer mode** switcher, **Settings** (*Preferences...* / *Open config file* / *Reload config*), and **Quit**.
+- **Native GTK4 Preferences Window**
+  - Lazy-built **Settings → Preferences...** window for editing intervals, break durations, snooze/skip limits, Smart Pause idle thresholds, audio toggle, and custom exercise prompts (dropped from memory when closed).
 - **Flexible Timer Modes**
   - **Smart Pause (default):** Uses Wayland `ext-idle-notify-v1` to pause on user inactivity and reset after `idle_reset_seconds` (respects video/media idle inhibitors such as browser playback).
   - **Strict:** Ignores user inactivity and schedules breaks strictly by elapsed time since the last break.
@@ -45,6 +47,15 @@ Build and install directly from the included `PKGBUILD`:
 git clone https://github.com/zfgf11/safeeyes-rs.git
 cd safeeyes-rs/packaging/aur
 makepkg -si
+```
+
+### Debian / Ubuntu & Universal Tarball (GitHub Releases)
+
+Prebuilt `.deb` (Debian 13+ / Ubuntu 24.10+), `.rpm`, and `.tar.gz` packages with `SHA256SUMS.txt` are published automatically on the [GitHub Releases](https://github.com/zfgf11/safeeyes-rs/releases) page:
+
+```bash
+# Debian / Ubuntu (after downloading the .deb from Releases)
+sudo apt install ./safeeyes-rs_*.deb
 ```
 
 ### Build from Source

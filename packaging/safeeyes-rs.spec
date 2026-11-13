@@ -1,5 +1,5 @@
 Name:           safeeyes-rs
-Version:        0.1.2
+Version:        0.1.3
 Release:        1%{?dist}
 Summary:        Lightweight, native Wayland Rust rewrite of SafeEyes
 
@@ -41,6 +41,11 @@ cargo test --release --locked
 %{_datadir}/applications/%{name}.desktop
 
 %changelog
+* Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.3-1
+- Add lightweight lazy-built GTK4 Preferences window (Settings -> Preferences...)
+- Keep tray icon visible (dimmed/red-slashed) when temporarily or manually disabled
+- Add automated GitHub Actions CI and multi-distro release artifacts (.deb, .rpm, .tar.gz)
+
 * Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.2-1
 - Add Snooze (postpone break) button to break overlay (`snooze_duration_minutes`)
 

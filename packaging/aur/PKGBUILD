@@ -1,6 +1,6 @@
 # Maintainer: zfgf11 <zfgf11@users.noreply.github.com>
 pkgname=safeeyes-rs
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="Protect your eyes from strain with periodic break reminders (native Wayland Rust rewrite of SafeEyes)"
 arch=('x86_64' 'aarch64')
