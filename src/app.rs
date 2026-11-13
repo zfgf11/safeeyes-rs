@@ -235,6 +235,16 @@ fn handle_tray_command(rt: &Rc<RefCell<AppRuntime>>, cmd: TrayCommand) {
             };
             apply_effects(rt, effects);
         }
+        TrayCommand::DisableIndefinitely => {
+            let effects = {
+                let mut r = rt.borrow_mut();
+                if let Some(id) = r.reenable_timer.take() {
+                    id.remove();
+                }
+                r.core.disable(None)
+            };
+            apply_effects(rt, effects);
+        }
         TrayCommand::SetTimerMode(mode) => {
             let (effects, config_path) = {
                 let mut r = rt.borrow_mut();

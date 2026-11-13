@@ -11,6 +11,7 @@ use crate::core::config::TimerMode;
 pub enum TrayCommand {
     ToggleEnabled,
     DisableForMinutes(u64),
+    DisableIndefinitely,
     SetTimerMode(TimerMode),
     TakeShortBreakNow,
     TakeLongBreakNow,
@@ -130,6 +131,36 @@ impl Tray for SafeEyesTray {
             TimerMode::Strict => 1,
         };
 
+        let mut disable_submenu: Vec<MenuItem<Self>> = [
+            ("15 minutes", 15_u64),
+            ("30 minutes", 30),
+            ("1 hour", 60),
+            ("2 hours", 120),
+            ("4 hours", 240),
+        ]
+        .into_iter()
+        .map(|(label, mins)| {
+            StandardItem {
+                label: label.to_string(),
+                activate: Box::new(move |this: &mut Self| {
+                    this.send(TrayCommand::DisableForMinutes(mins))
+                }),
+                ..Default::default()
+            }
+            .into()
+        })
+        .collect();
+        disable_submenu.push(MenuItem::Separator);
+        disable_submenu.push(
+            StandardItem {
+                label: "Until manually enabled".to_string(),
+                enabled: self.snapshot.enabled,
+                activate: Box::new(|this: &mut Self| this.send(TrayCommand::DisableIndefinitely)),
+                ..Default::default()
+            }
+            .into(),
+        );
+
         let mut items: Vec<MenuItem<Self>> = vec![
             StandardItem {
                 label: self.snapshot.status_line.clone(),
@@ -147,24 +178,7 @@ impl Tray for SafeEyesTray {
             .into(),
             SubMenu {
                 label: "Disable for...".to_string(),
-                submenu: vec![
-                    StandardItem {
-                        label: "15 minutes".to_string(),
-                        activate: Box::new(|this: &mut Self| {
-                            this.send(TrayCommand::DisableForMinutes(15))
-                        }),
-                        ..Default::default()
-                    }
-                    .into(),
-                    StandardItem {
-                        label: "1 hour".to_string(),
-                        activate: Box::new(|this: &mut Self| {
-                            this.send(TrayCommand::DisableForMinutes(60))
-                        }),
-                        ..Default::default()
-                    }
-                    .into(),
-                ],
+                submenu: disable_submenu,
                 ..Default::default()
             }
             .into(),

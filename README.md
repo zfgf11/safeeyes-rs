@@ -4,6 +4,14 @@ Protect your eyes from strain with periodic break reminders and a clean, distrac
 
 `safeeyes-rs` is a lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgobinath/SafeEyes) for Linux (**KDE Plasma** and **GNOME**), preserving the familiar system tray workflow with event-driven, zero-polling Linux/Wayland integration.
 
+## Screenshots
+
+### Fullscreen Break Overlay
+![Fullscreen Break Overlay](assets/break-fullscreen.png)
+
+### System Tray Menu (KDE Plasma)
+![System Tray Menu](assets/menu.png)
+
 ## Features
 
 - **Native Wayland Fullscreen Overlay**
@@ -11,7 +19,7 @@ Protect your eyes from strain with periodic break reminders and a clean, distrac
   - Automatic fallback to undecorated `gtk4::ApplicationWindow::fullscreen_on_monitor` on GNOME Mutter.
   - Responsive layout with a large integer-second countdown (`tabular-nums`), top-right **Lock screen now** button, bottom **Skip** button with `Skipped X/Y breaks` counter, and `Esc` shortcut.
 - **Cross-DE System Tray (`ksni` / StatusNotifierItem)**
-  - Next break status line, Enable/Disable toggle, timed disable (*15 minutes* / *1 hour*), **Take a 15s break now**, **Take a 60s break now**, **Timer mode** switcher, Settings (*Open config file* / *Reload config*), and Quit.
+  - Next break status line, Enable/Disable toggle, timed disable (*15m / 30m / 1h / 2h / 4h* or until manually enabled), **Take a 15s break now**, **Take a 60s break now**, **Timer mode** switcher, Settings (*Open config file* / *Reload config*), and Quit.
 - **Flexible Timer Modes**
   - **Smart Pause (default):** Uses Wayland `ext-idle-notify-v1` to pause on user inactivity and reset after `idle_reset_seconds` (respects video/media idle inhibitors such as browser playback).
   - **Strict:** Ignores user inactivity and schedules breaks strictly by elapsed time since the last break.
