@@ -4,6 +4,8 @@ Protect your eyes from strain with periodic break reminders and a clean, distrac
 
 `safeeyes-rs` is a lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgobinath/SafeEyes) for Linux (**KDE Plasma** and **GNOME**), preserving the familiar system tray workflow with event-driven, zero-polling Linux/Wayland integration.
 
+🌐 **Website:** https://safeeyes-rs.zfgf.uk/
+
 ## Screenshots
 
 ### Fullscreen Break Overlay
