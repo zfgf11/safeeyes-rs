@@ -54,8 +54,10 @@ pub struct Config {
     pub long_break_duration_seconds: u64,
     /// Seconds before a break to show a pre-break notification (0 disables notifications).
     pub pre_break_warning_seconds: u64,
-    /// Maximum number of consecutive break skips allowed before Reset.
+    /// Maximum number of consecutive break skips/snoozes allowed before reset.
     pub max_skips: u32,
+    /// Duration in minutes to postpone a break when clicking Snooze.
+    pub snooze_duration_minutes: u64,
     /// Seconds of user inactivity before pausing the break countdown (0 disables idle detection).
     pub idle_pause_seconds: u64,
     /// Seconds of user inactivity after which the break timer resets on resume.
@@ -82,6 +84,7 @@ impl Default for Config {
             long_break_duration_seconds: 60,
             pre_break_warning_seconds: 10,
             max_skips: 2,
+            snooze_duration_minutes: 5,
             idle_pause_seconds: 300,
             idle_reset_seconds: 300,
             enable_sound: true,
@@ -163,6 +166,9 @@ impl Config {
         }
         if self.long_break_duration_seconds == 0 {
             self.long_break_duration_seconds = 1;
+        }
+        if self.snooze_duration_minutes == 0 {
+            self.snooze_duration_minutes = 1;
         }
         let interval_secs = self.interval_seconds();
         if self.pre_break_warning_seconds >= interval_secs {

@@ -20,6 +20,7 @@ pub enum CorePhase {
         next_break_wall: DateTime<Local>,
         next_kind: BreakKind,
         pre_break_notified: bool,
+        snoozed_kind: Option<BreakKind>,
     },
     /// Break overlay is currently active.
     InBreak {
@@ -85,6 +86,7 @@ impl CoreState {
                 next_break_wall,
                 next_kind,
                 pre_break_notified: false,
+                snoozed_kind: None,
             },
             skips_used: 0,
             is_locked_or_sleeping: false,
@@ -161,6 +163,7 @@ impl CoreState {
             next_break_at,
             next_kind,
             pre_break_notified,
+            snoozed_kind,
             ..
         } = self.phase.clone()
         else {
@@ -202,7 +205,10 @@ impl CoreState {
             }];
         }
 
-        let plan = self.scheduler.take_next_break(&self.config);
+        let plan = match snoozed_kind {
+            Some(kind) => self.scheduler.take_manual_break(&self.config, kind),
+            None => self.scheduler.take_next_break(&self.config),
+        };
         self.enter_break(plan)
     }
 
@@ -251,6 +257,38 @@ impl CoreState {
         let mut effects = vec![CoreEffect::CloseBreakOverlay];
         effects.extend(self.reset_to_waiting(now));
         effects
+    }
+
+    /// Postpones the current break by `snooze_duration_minutes` if skips remain,
+    /// preserving the break kind (e.g. a snoozed long break stays a long break).
+    pub fn snooze_break(&mut self, now: Instant) -> Vec<CoreEffect> {
+        let CorePhase::InBreak { ref plan, .. } = self.phase else {
+            return Vec::new();
+        };
+        if !self.can_skip() {
+            return Vec::new();
+        }
+        let kind = plan.kind;
+        self.skips_used = self.skips_used.saturating_add(1);
+        let snooze_dur = Duration::from_secs(self.config.snooze_duration_minutes.saturating_mul(60));
+        let next_break_at = now + snooze_dur;
+        let next_break_wall = wall_after(snooze_dur);
+        self.phase = CorePhase::Waiting {
+            next_break_at,
+            next_break_wall,
+            next_kind: kind,
+            pre_break_notified: false,
+            snoozed_kind: Some(kind),
+        };
+        let delay = self.compute_wait_delay(now);
+        vec![
+            CoreEffect::CloseBreakOverlay,
+            CoreEffect::CancelTimers,
+            CoreEffect::ScheduleNextWakeup {
+                delay_seconds: delay,
+            },
+            CoreEffect::RefreshTray,
+        ]
     }
 
     /// Enables SafeEyes (from disabled state or re-enables immediately).
@@ -443,6 +481,7 @@ impl CoreState {
             next_break_wall,
             next_kind,
             pre_break_notified: false,
+            snoozed_kind: None,
         };
         let delay = self.compute_wait_delay(now);
         vec![
@@ -482,6 +521,7 @@ impl CoreState {
             next_break_wall,
             next_kind,
             pre_break_notified: false,
+            snoozed_kind: None,
         };
         let delay = self.compute_wait_delay(now);
         vec![
@@ -695,5 +735,32 @@ mod tests {
         // Subsequent idle events are ignored in Strict mode
         assert!(state.on_user_idled(t1 + Duration::from_secs(20)).is_empty());
         assert!(state.on_user_resumed(t1 + Duration::from_secs(60)).is_empty());
+    }
+
+    #[test]
+    fn snooze_break_postpones_and_preserves_break_kind() {
+        let cfg = Config {
+            short_break_interval_minutes: 15,
+            snooze_duration_minutes: 5,
+            pre_break_warning_seconds: 10,
+            max_skips: 2,
+            ..Default::default()
+        };
+        let t0 = Instant::now();
+        let (mut state, _) = CoreState::new(cfg, t0);
+
+        state.take_break_now(BreakKind::Long);
+        let eff = state.snooze_break(t0);
+        assert!(eff.contains(&CoreEffect::CloseBreakOverlay));
+        assert!(eff.contains(&CoreEffect::ScheduleNextWakeup { delay_seconds: 290 }));
+        assert_eq!(state.skips_used(), 1);
+
+        // When snooze timer expires, the postponed Long break opens again
+        let t_break = t0 + Duration::from_secs(300);
+        let break_eff = state.on_wait_timer(t_break);
+        assert!(break_eff.iter().any(|e| matches!(
+            e,
+            CoreEffect::OpenBreakOverlay { plan, .. } if plan.kind == BreakKind::Long
+        )));
     }
 }

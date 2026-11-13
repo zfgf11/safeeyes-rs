@@ -1,5 +1,5 @@
 Name:           safeeyes-rs
-Version:        0.1.1
+Version:        0.1.2
 Release:        1%{?dist}
 Summary:        Lightweight, native Wayland Rust rewrite of SafeEyes
 
@@ -41,6 +41,9 @@ cargo test --release --locked
 %{_datadir}/applications/%{name}.desktop
 
 %changelog
+* Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.2-1
+- Add Snooze (postpone break) button to break overlay (`snooze_duration_minutes`)
+
 * Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.1-1
 - Add 30m, 2h, 4h, and indefinite options to "Disable for..." tray menu
 - Add README screenshots and packaging updates

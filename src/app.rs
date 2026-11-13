@@ -389,6 +389,10 @@ fn handle_overlay_action(rt: &Rc<RefCell<AppRuntime>>, action: OverlayAction) {
             let effects = rt.borrow_mut().core.skip_break(now);
             apply_effects(rt, effects);
         }
+        OverlayAction::SnoozeBreak => {
+            let effects = rt.borrow_mut().core.snooze_break(now);
+            apply_effects(rt, effects);
+        }
         OverlayAction::LockScreen => {
             lock_screen_async();
         }
@@ -455,12 +459,14 @@ fn apply_effects(rt: &Rc<RefCell<AppRuntime>>, effects: Vec<CoreEffect>) {
                 let mut r = rt.borrow_mut();
                 let app = r.app.clone();
                 let action_tx = r.overlay_tx.clone();
+                let snooze_minutes = r.core.config().snooze_duration_minutes;
                 r.overlay.show(
                     &app,
                     &plan,
                     remaining_seconds,
                     skips_used,
                     max_skips,
+                    snooze_minutes,
                     &action_tx,
                 );
 

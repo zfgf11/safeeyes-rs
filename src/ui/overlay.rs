@@ -17,6 +17,7 @@ const OVERLAY_CSS: &str = include_str!("style.css");
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OverlayAction {
     SkipBreak,
+    SnoozeBreak,
     LockScreen,
 }
 
@@ -39,6 +40,7 @@ impl BreakOverlayManager {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn show(
         &mut self,
         app: &Application,
@@ -46,6 +48,7 @@ impl BreakOverlayManager {
         remaining_seconds: u64,
         skips_used: u32,
         max_skips: u32,
+        snooze_minutes: u64,
         action_tx: &Sender<OverlayAction>,
     ) {
         self.close();
@@ -70,6 +73,7 @@ impl BreakOverlayManager {
                 remaining_seconds,
                 skips_used,
                 max_skips,
+                snooze_minutes,
                 action_tx,
             );
             overlay.window.present();
@@ -86,6 +90,7 @@ impl BreakOverlayManager {
                 remaining_seconds,
                 skips_used,
                 max_skips,
+                snooze_minutes,
                 action_tx,
             );
             overlay.window.present();
@@ -161,6 +166,7 @@ fn build_overlay_window(
     remaining_seconds: u64,
     skips_used: u32,
     max_skips: u32,
+    snooze_minutes: u64,
     action_tx: &Sender<OverlayAction>,
 ) -> MonitorOverlay {
     let window = ApplicationWindow::builder()
@@ -271,6 +277,17 @@ fn build_overlay_window(
     bottom_bar.add_css_class("safeeyes-bottom-bar");
 
     let can_skip = skips_used < max_skips;
+    let snooze_btn = Button::with_label(&format!("Snooze {snooze_minutes}m"));
+    snooze_btn.set_sensitive(can_skip);
+    snooze_btn.set_focus_on_click(false);
+    snooze_btn.add_css_class("safeeyes-skip-btn");
+    {
+        let tx = action_tx.clone();
+        snooze_btn.connect_clicked(move |_| {
+            let _ = tx.try_send(OverlayAction::SnoozeBreak);
+        });
+    }
+
     let skip_btn = Button::with_label("Skip");
     skip_btn.set_sensitive(can_skip);
     skip_btn.set_focus_on_click(false);
@@ -285,6 +302,7 @@ fn build_overlay_window(
     let skip_status = Label::new(Some(&format!("Skipped {skips_used}/{max_skips} breaks")));
     skip_status.add_css_class("safeeyes-skip-status");
 
+    bottom_bar.append(&snooze_btn);
     bottom_bar.append(&skip_btn);
     bottom_bar.append(&skip_status);
     root.add_overlay(&bottom_bar);
