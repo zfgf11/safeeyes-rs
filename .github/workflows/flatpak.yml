@@ -55,8 +55,12 @@ jobs:
           text = p.read_text()
           idx = text.index("      - type: archive\n        url: https://github.com/zfgf11/safeeyes-rs/")
           end = text.index("      - cargo-sources.json")
-          ci_text = text[:idx] + "      - type: dir\n        path: ../..\n" + text[end:]
-          pathlib.Path("packaging/flathub/ci-manifest.yml").write_text(ci_text)
+          ci_text = (
+              text[:idx]
+              + "      - type: dir\n        path: .\n"
+              + text[end:].replace("      - cargo-sources.json", "      - packaging/flathub/cargo-sources.json", 1)
+          )
+          pathlib.Path("ci-manifest.yml").write_text(ci_text)
           EOF
 
       - name: Build Flatpak bundle
@@ -69,7 +73,7 @@ jobs:
             --sandbox \
             --repo=repo \
             flatpak_app \
-            packaging/flathub/ci-manifest.yml
+            ci-manifest.yml
           flatpak build-bundle \
             --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
             repo \
