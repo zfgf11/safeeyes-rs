@@ -39,6 +39,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install rust-stable SDK extension into user store
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.freedesktop.Sdk.Extension.rust-stable//26.08
+
       - name: Prepare local-source Flatpak manifest for CI
         run: |
           python3 - <<'EOF'
@@ -51,8 +56,23 @@ jobs:
           pathlib.Path("packaging/flathub/ci-manifest.yml").write_text(ci_text)
           EOF
 
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      - name: Build Flatpak bundle
+        run: |
+          mkdir -p dist
+          flatpak-builder \
+            --force-clean \
+            --disable-rofiles-fuse \
+            --sandbox \
+            --repo=repo \
+            flatpak_app \
+            packaging/flathub/ci-manifest.yml
+          flatpak build-bundle \
+            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
+            repo \
+            dist/safeeyes-rs.flatpak \
+            io.github.zfgf11.safeeyes_rs
+
+      - uses: actions/upload-artifact@v4
         with:
-          bundle: safeeyes-rs.flatpak
-          manifest-path: packaging/flathub/ci-manifest.yml
-          cache: true
+          name: safeeyes-rs-flatpak-bundle
+          path: dist/safeeyes-rs.flatpak
