@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=SafeEyes-RS
+GenericName=Eye Strain Prevention
+Comment=Protect your eyes from strain with periodic break reminders
+Exec=safeeyes-rs
+Icon=io.github.zfgf11.safeeyes_rs
+Terminal=false
+Categories=Utility;GTK;
+Keywords=safeeyes;break;eyes;wayland;
+StartupNotify=false
+X-GNOME-UsesNotifications=true

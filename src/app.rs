@@ -23,7 +23,7 @@ use crate::tray::{SafeEyesTray, TrayCommand, TraySnapshot};
 use crate::ui::overlay::{BreakOverlayManager, OverlayAction};
 use crate::ui::settings::{SettingsAction, SettingsWindowManager};
 
-const APP_ID: &str = "io.github.safeeyes_rs";
+const APP_ID: &str = "io.github.zfgf11.safeeyes_rs";
 
 pub fn run() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();

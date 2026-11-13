@@ -1,0 +1,66 @@
+name: Flatpak Build Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/flathub/**'
+      - 'Cargo.lock'
+      - 'src/**'
+  pull_request:
+    paths:
+      - 'packaging/flathub/**'
+      - 'Cargo.lock'
+      - 'src/**'
+  workflow_dispatch:
+
+jobs:
+  flatpak-build:
+    name: Build Flatpak & Upload Bundle
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flatpak tools & runtimes
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder appstream desktop-file-utils
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub \
+            org.gnome.Platform//51 \
+            org.gnome.Sdk//51 \
+            org.freedesktop.Sdk.Extension.rust-stable//26.08
+
+      - name: Validate desktop and AppStream metadata
+        run: |
+          desktop-file-validate packaging/flathub/io.github.zfgf11.safeeyes_rs.desktop
+          appstreamcli validate --pedantic --no-net packaging/flathub/io.github.zfgf11.safeeyes_rs.metainfo.xml
+
+      - name: Prepare local-source Flatpak manifest for CI
+        run: |
+          python3 - <<'EOF'
+          import pathlib
+          p = pathlib.Path("packaging/flathub/io.github.zfgf11.safeeyes_rs.yml")
+          text = p.read_text()
+          idx = text.index("      - type: archive\n        url: https://github.com/zfgf11/safeeyes-rs/")
+          end = text.index("      - cargo-sources.json")
+          ci_text = text[:idx] + "      - type: dir\n        path: ../..\n" + text[end:]
+          pathlib.Path("packaging/flathub/ci-manifest.yml").write_text(ci_text)
+          EOF
+
+      - name: Build Flatpak and export bundle
+        run: |
+          flatpak-builder \
+            --user \
+            --force-clean \
+            --sandbox \
+            --install-deps-from=flathub \
+            --repo=/tmp/flatpak-repo \
+            /tmp/flatpak-build \
+            packaging/flathub/ci-manifest.yml
+          flatpak build-bundle /tmp/flatpak-repo safeeyes-rs.flatpak io.github.zfgf11.safeeyes_rs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: safeeyes-rs-flatpak-bundle
+          path: safeeyes-rs.flatpak

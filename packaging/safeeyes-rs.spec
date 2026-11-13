@@ -1,5 +1,5 @@
 Name:           safeeyes-rs
-Version:        0.1.3
+Version:        0.1.4
 Release:        1%{?dist}
 Summary:        Lightweight, native Wayland Rust rewrite of SafeEyes
 
@@ -41,6 +41,9 @@ cargo test --release --locked
 %{_datadir}/applications/%{name}.desktop
 
 %changelog
+* Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.4-1
+- Add Flathub AppStream metadata, SVG icon, sandboxed chime fallback, and Flatpak manifest
+
 * Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.3-1
 - Add lightweight lazy-built GTK4 Preferences window (Settings -> Preferences...)
 - Keep tray icon visible (dimmed/red-slashed) when temporarily or manually disabled
