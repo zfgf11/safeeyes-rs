@@ -50,15 +50,21 @@ jobs:
 
       - name: Build Flatpak and export bundle
         run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           flatpak-builder \
             --user \
             --force-clean \
+            --disable-rofiles-fuse \
             --sandbox \
             --install-deps-from=flathub \
             --repo=/tmp/flatpak-repo \
             /tmp/flatpak-build \
             packaging/flathub/ci-manifest.yml
-          flatpak build-bundle /tmp/flatpak-repo safeeyes-rs.flatpak io.github.zfgf11.safeeyes_rs
+          flatpak build-bundle \
+            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo \
+            /tmp/flatpak-repo \
+            safeeyes-rs.flatpak \
+            io.github.zfgf11.safeeyes_rs
 
       - uses: actions/upload-artifact@v4
         with:
