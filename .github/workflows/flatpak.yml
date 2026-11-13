@@ -39,10 +39,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install rust-stable SDK extension into user store
+      - name: Install GNOME 51 SDK, Platform and rust-stable into user store
         run: |
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y --noninteractive flathub org.freedesktop.Sdk.Extension.rust-stable//26.08
+          flatpak install --user -y --noninteractive flathub \
+            org.gnome.Platform//51 \
+            org.gnome.Sdk//51 \
+            org.freedesktop.Sdk.Extension.rust-stable//26.08
 
       - name: Prepare local-source Flatpak manifest for CI
         run: |
@@ -60,6 +63,7 @@ jobs:
         run: |
           mkdir -p dist
           flatpak-builder \
+            --user \
             --force-clean \
             --disable-rofiles-fuse \
             --sandbox \
