@@ -49,7 +49,7 @@ modules:
     sources:
       - type: archive
         url: https://github.com/zfgf11/safeeyes-rs/archive/refs/tags/v0.1.5.tar.gz
-        sha256: PENDING_V0_1_5_TAG_SHA256
+        sha256: e7d54b3811f9f31f1b2a15873c4a2bf667ac366d9b21e75161df715fcc1d265f
         x-checker-data:
           type: git
           url: https://github.com/zfgf11/safeeyes-rs.git
