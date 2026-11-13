@@ -64,6 +64,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.1.6" date="2026-11-13">
+      <description>
+        <p>Publish downloadable .flatpak bundle directly in GitHub Releases.</p>
+      </description>
+    </release>
     <release version="0.1.5" date="2026-11-13">
       <description>
         <p>Fix StatusNotifierItem system tray registration inside the Flatpak sandbox.</p>

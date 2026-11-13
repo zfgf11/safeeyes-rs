@@ -51,12 +51,25 @@ makepkg -si
 
 ### Debian / Ubuntu & Universal Tarball (GitHub Releases)
 
-Prebuilt `.deb` (Debian 13+ / Ubuntu 24.10+), `.rpm`, and `.tar.gz` packages with `SHA256SUMS.txt` are published automatically on the [GitHub Releases](https://github.com/zfgf11/safeeyes-rs/releases) page:
+Prebuilt `.deb` (Debian 13+ / Ubuntu 24.10+), `.rpm`, `.flatpak`, and `.tar.gz` packages with `SHA256SUMS.txt` are published automatically on the [GitHub Releases](https://github.com/zfgf11/safeeyes-rs/releases) page:
 
 ```bash
 # Debian / Ubuntu (after downloading the .deb from Releases)
 sudo apt install ./safeeyes-rs_*.deb
 ```
+
+### Flatpak (Bundle from GitHub Releases)
+
+Download `safeeyes-rs-v*-x86_64.flatpak` from the [GitHub Releases](https://github.com/zfgf11/safeeyes-rs/releases) page, then double-click it to install via KDE Discover / GNOME Software, or install from the terminal:
+
+```bash
+# Ensure Flathub remote is configured for the GNOME runtime, then install:
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user ./safeeyes-rs-*-x86_64.flatpak
+flatpak run io.github.zfgf11.safeeyes_rs
+```
+
+> **Flatpak Autostart:** Add **SafeEyes-RS** in your desktop's *System Settings → Autostart* (or *GNOME Tweaks → Startup Applications*).
 
 ### Build from Source
 
