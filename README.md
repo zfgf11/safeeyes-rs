@@ -1,8 +1,8 @@
 # safeeyes-rs
 
-A lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgobinath/SafeEyes) for Linux (**KDE Plasma** and **GNOME**).
+A lightweight, native Wayland Rust rewrite of [SafeEyes](https://github.com/slgobinath/SafeEyes) for **KDE Plasma** and **GNOME**.
 
-`safeeyes-rs` preserves the familiar system tray workflow while delivering a modern, responsive fullscreen break overlay and event-driven zero-polling Linux/Wayland integration.
+`safeeyes-rs` preserves the familiar system tray workflow while delivering a modern, responsive fullscreen break overlay and event-driven zero-polling Wayland integration.
 
 ## Features
 
@@ -61,6 +61,4 @@ $XDG_CONFIG_HOME/safeeyes-rs/config.toml   # usually ~/.config/safeeyes-rs/confi
 
 After editing `config.toml`, apply changes immediately via **Settings → Reload config** in the tray menu.
 
-## License
 
-See [Cargo.toml](Cargo.toml) and the repository `LICENSE` file.

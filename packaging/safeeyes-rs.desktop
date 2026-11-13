@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=SafeEyes-RS
+GenericName=Eye Strain Prevention
+Comment=Lightweight, native Wayland Rust rewrite of SafeEyes
+Exec=safeeyes-rs
+Icon=appointment-soon
+Terminal=false
+Categories=Utility;GTK;
+Keywords=safeeyes;break;eyes;wayland;
+StartupNotify=false
