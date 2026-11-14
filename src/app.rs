@@ -11,7 +11,7 @@ use gtk4::Application;
 use ksni::blocking::Handle as TrayHandle;
 use tracing::{error, info, warn};
 
-use crate::core::config::{Config, TimerMode};
+use crate::core::config::{Config, DEFAULT_PROFILE_ID, FocusProfile, TimerMode};
 use crate::core::scheduler::BreakKind;
 use crate::core::state::{CoreEffect, CoreState, PauseReason};
 use crate::system::audio;
@@ -46,6 +46,8 @@ struct AppRuntime {
     app: Application,
     _hold: ApplicationHoldGuard,
     config_path: Option<PathBuf>,
+    profiles: Vec<FocusProfile>,
+    active_profile_id: String,
     core: CoreState,
     overlay: BreakOverlayManager,
     overlay_tx: Sender<OverlayAction>,
@@ -71,6 +73,8 @@ impl AppRuntime {
             long_break_seconds: cfg.long_break_duration_seconds,
             timer_mode: cfg.timer_mode,
             idle_reset_seconds: cfg.idle_reset_seconds,
+            profiles: self.profiles.clone(),
+            active_profile_id: self.active_profile_id.clone(),
         }
     }
 
@@ -94,11 +98,14 @@ impl AppRuntime {
 fn start_application(app: &Application) {
     let hold = app.hold();
 
-    let (config, config_path) = match Config::load_or_create_default() {
-        Ok((cfg, path)) => (cfg, Some(path)),
+    let (config, config_path, profiles, active_profile_id) = match Config::load_active_profile() {
+        Ok((profile, cfg, profiles)) => (cfg, Some(profile.path), profiles, profile.id),
         Err(err) => {
-            warn!("failed to load config, using defaults: {err}");
-            (Config::default(), None)
+            warn!("failed to load active focus profile, using defaults: {err}");
+            let (cfg, path) = Config::load_or_create_default()
+                .map(|(c, p)| (c, Some(p)))
+                .unwrap_or_else(|_| (Config::default(), None));
+            (cfg, path, Vec::new(), DEFAULT_PROFILE_ID.to_string())
         }
     };
 
@@ -117,6 +124,8 @@ fn start_application(app: &Application) {
         long_break_seconds: config.long_break_duration_seconds,
         timer_mode: config.timer_mode,
         idle_reset_seconds: config.idle_reset_seconds,
+        profiles: profiles.clone(),
+        active_profile_id: active_profile_id.clone(),
     };
 
     let tray_handle = SafeEyesTray::spawn(tray_tx, initial_snapshot);
@@ -131,6 +140,8 @@ fn start_application(app: &Application) {
         app: app.clone(),
         _hold: hold,
         config_path,
+        profiles,
+        active_profile_id,
         core,
         overlay: BreakOverlayManager::new(),
         overlay_tx,
@@ -288,6 +299,23 @@ fn handle_tray_command(rt: &Rc<RefCell<AppRuntime>>, cmd: TrayCommand) {
             }
             apply_effects(rt, effects);
         }
+        TrayCommand::SwitchProfile(profile_id) => {
+            switch_profile(rt, &profile_id, now);
+        }
+        TrayCommand::OpenProfilesFolder => {
+            let _ = Config::list_profiles();
+            if let Ok(dir) = Config::profiles_dir() {
+                let uri = format!("file://{}", dir.display());
+                if let Err(err) =
+                    gio::AppInfo::launch_default_for_uri(&uri, gio::AppLaunchContext::NONE)
+                {
+                    warn!(
+                        "failed to open profiles folder {}: {err}",
+                        dir.display()
+                    );
+                }
+            }
+        }
         TrayCommand::TakeShortBreakNow => {
             let effects = rt.borrow_mut().core.take_break_now(BreakKind::Short);
             apply_effects(rt, effects);
@@ -298,8 +326,13 @@ fn handle_tray_command(rt: &Rc<RefCell<AppRuntime>>, cmd: TrayCommand) {
         }
         TrayCommand::OpenPreferences => {
             let r = rt.borrow();
-            r.settings
-                .open(&r.app, r.core.config(), &r.settings_tx);
+            r.settings.open(
+                &r.app,
+                &r.profiles,
+                &r.active_profile_id,
+                r.core.config(),
+                &r.settings_tx,
+            );
         }
         TrayCommand::ReloadConfig => {
             reload_config(rt, now);
@@ -338,7 +371,7 @@ fn handle_tray_command(rt: &Rc<RefCell<AppRuntime>>, cmd: TrayCommand) {
 }
 
 fn reload_config(rt: &Rc<RefCell<AppRuntime>>, now: Instant) {
-    let (new_cfg, path) = match Config::load_or_create_default() {
+    let (profile, new_cfg, profiles) = match Config::load_active_profile() {
         Ok(res) => res,
         Err(err) => {
             error!("failed to reload config: {err}");
@@ -346,30 +379,131 @@ fn reload_config(rt: &Rc<RefCell<AppRuntime>>, now: Instant) {
         }
     };
 
-    info!("reloaded config from {}", path.display());
-    apply_new_config(rt, new_cfg, Some(path), now);
+    info!(
+        "reloaded focus mode '{}' from {}",
+        profile.name,
+        profile.path.display()
+    );
+    {
+        let mut r = rt.borrow_mut();
+        r.profiles = profiles;
+        r.active_profile_id = profile.id.clone();
+    }
+    apply_new_config(rt, new_cfg, Some(profile.path), now);
+    let r = rt.borrow();
+    r.settings
+        .sync_profile(&r.profiles, &r.active_profile_id, r.core.config());
+}
+
+fn switch_profile(rt: &Rc<RefCell<AppRuntime>>, profile_id: &str, now: Instant) {
+    let profiles = match Config::list_profiles() {
+        Ok(list) => list,
+        Err(err) => {
+            error!("failed to list focus modes: {err}");
+            return;
+        }
+    };
+    let Some(target) = profiles.iter().find(|p| p.id == profile_id).cloned() else {
+        warn!("focus mode '{profile_id}' not found");
+        return;
+    };
+    let new_cfg = match Config::load_from_path(&target.path) {
+        Ok(cfg) => cfg,
+        Err(err) => {
+            error!(
+                "failed to load focus mode '{}' from {}: {err}",
+                target.name,
+                target.path.display()
+            );
+            rt.borrow().settings.show_profile_error(&err.to_string());
+            return;
+        }
+    };
+    if let Err(err) = Config::save_active_profile_id(&target.id) {
+        warn!("failed to persist active focus mode '{}': {err}", target.id);
+    }
+
+    info!("switched focus mode to '{}'", target.name);
+    {
+        let mut r = rt.borrow_mut();
+        r.profiles = profiles;
+        r.active_profile_id = target.id.clone();
+    }
+    apply_new_config(rt, new_cfg, Some(target.path), now);
+    let r = rt.borrow();
+    r.settings
+        .sync_profile(&r.profiles, &r.active_profile_id, r.core.config());
 }
 
 fn handle_settings_action(rt: &Rc<RefCell<AppRuntime>>, action: SettingsAction) {
     let now = Instant::now();
     match action {
-        SettingsAction::Save(new_cfg) => {
-            let target_path = rt
-                .borrow()
-                .config_path
-                .clone()
-                .or_else(|| Config::config_path().ok());
+        SettingsAction::Save { profile_id, config } => {
+            let target_path = {
+                let r = rt.borrow();
+                r.profiles
+                    .iter()
+                    .find(|p| p.id == profile_id)
+                    .map(|p| p.path.clone())
+                    .or_else(|| r.config_path.clone())
+                    .or_else(|| Config::config_path().ok())
+            };
 
             if let Some(ref path) = target_path {
-                if let Err(err) = new_cfg.save_to_path(path) {
+                if let Err(err) = config.save_to_path(path) {
                     error!("failed to save preferences to {}: {err}", path.display());
                 } else {
                     info!("saved preferences to {}", path.display());
                 }
             }
 
-            apply_new_config(rt, new_cfg, target_path, now);
+            if rt.borrow().active_profile_id == profile_id {
+                apply_new_config(rt, config, target_path, now);
+            } else {
+                switch_profile(rt, &profile_id, now);
+            }
         }
+        SettingsAction::SwitchProfile(profile_id) => {
+            switch_profile(rt, &profile_id, now);
+        }
+        SettingsAction::CreateProfile { name, config } => {
+            match Config::create_profile(&name, &config) {
+                Ok(created) => {
+                    let profiles = Config::list_profiles().unwrap_or_default();
+                    info!(
+                        "created focus mode '{}' at {}",
+                        created.name,
+                        created.path.display()
+                    );
+                    {
+                        let mut r = rt.borrow_mut();
+                        r.profiles = profiles;
+                        r.active_profile_id = created.id.clone();
+                    }
+                    apply_new_config(rt, config, Some(created.path), now);
+                    let r = rt.borrow();
+                    r.settings.sync_profile(
+                        &r.profiles,
+                        &r.active_profile_id,
+                        r.core.config(),
+                    );
+                }
+                Err(err) => {
+                    warn!("failed to create focus mode '{name}': {err}");
+                    rt.borrow().settings.show_profile_error(&err.to_string());
+                }
+            }
+        }
+        SettingsAction::DeleteProfile(profile_id) => match Config::delete_profile(&profile_id) {
+            Ok(()) => {
+                info!("deleted focus mode '{profile_id}'");
+                reload_config(rt, now);
+            }
+            Err(err) => {
+                warn!("failed to delete focus mode '{profile_id}': {err}");
+                rt.borrow().settings.show_profile_error(&err.to_string());
+            }
+        },
     }
 }
 

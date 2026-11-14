@@ -21,9 +21,12 @@ Protect your eyes from strain with periodic break reminders and a clean, distrac
   - Automatic fallback to undecorated `gtk4::ApplicationWindow::fullscreen_on_monitor` on GNOME Mutter.
   - Responsive layout with a large integer-second countdown (`tabular-nums`), top-right **Lock screen now** button, bottom **Skip** & **Snooze** buttons with `Skipped X/Y breaks` counter, and `Esc` shortcut.
 - **Cross-DE System Tray (`ksni` / StatusNotifierItem)**
-  - Next break status line, Enable/Disable toggle, timed disable (*15m / 30m / 1h / 2h / 4h* or until manually enabled), **Take a 15s break now**, **Take a 60s break now**, **Timer mode** switcher, **Settings** (*Preferences...* / *Open config file* / *Reload config*), and **Quit**.
+  - Next break status line, Enable/Disable toggle, timed disable (*15m / 30m / 1h / 2h / 4h* or until manually enabled), **Take a 15s break now**, **Take a 60s break now**, **Focus mode** profile switcher, **Timer mode** switcher, **Settings** (*Preferences...* / *Open config file* / *Reload config*), and **Quit**.
+- **Focus Modes (Multi-Config Profiles)**
+  - Switch between tailored break configurations directly from the tray menu (**Focus mode**) or create/edit/delete profiles inside **Preferences...**.
+  - Ships with starter profiles (**Default**, **Study** for 15m/15s, **Work** for 20m/20s) stored as `.toml` files in `$XDG_CONFIG_HOME/safeeyes-rs/profiles/`.
 - **Native GTK4 Preferences Window**
-  - Lazy-built **Settings → Preferences...** window for editing intervals, break durations, snooze/skip limits, Smart Pause idle thresholds, audio toggle, and custom exercise prompts (dropped from memory when closed).
+  - Lazy-built **Settings → Preferences...** window for managing Focus Modes and editing intervals, break durations, snooze/skip limits, Smart Pause idle thresholds, audio toggle, and custom exercise prompts (dropped from memory when closed).
 - **Flexible Timer Modes**
   - **Smart Pause (default):** Uses Wayland `ext-idle-notify-v1` to pause on user inactivity and reset after `idle_reset_seconds` (respects video/media idle inhibitors such as browser playback).
   - **Strict:** Ignores user inactivity and schedules breaks strictly by elapsed time since the last break.
@@ -103,13 +106,14 @@ cargo install --path .
 
 ## Configuration
 
-On first launch, `safeeyes-rs` creates a default configuration file at:
+On first launch, `safeeyes-rs` creates the default configuration and starter Focus Modes:
 
 ```text
-$XDG_CONFIG_HOME/safeeyes-rs/config.toml   # usually ~/.config/safeeyes-rs/config.toml
+$XDG_CONFIG_HOME/safeeyes-rs/config.toml         # Default profile (usually ~/.config/safeeyes-rs/config.toml)
+$XDG_CONFIG_HOME/safeeyes-rs/profiles/*.toml     # Additional Focus Modes (e.g. study.toml, work.toml)
 ```
 
-After editing `config.toml`, apply changes immediately via **Settings → Reload config** in the tray menu.
+After editing a `.toml` file manually, apply changes immediately via **Settings → Reload config** in the tray menu.
 
 ## License
 

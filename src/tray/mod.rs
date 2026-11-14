@@ -5,14 +5,16 @@ use ksni::blocking::{Handle, TrayMethods};
 use ksni::{Icon, MenuItem, Status, ToolTip, Tray};
 use tracing::{error, info, warn};
 
-use crate::core::config::TimerMode;
+use crate::core::config::{FocusProfile, TimerMode};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TrayCommand {
     ToggleEnabled,
     DisableForMinutes(u64),
     DisableIndefinitely,
     SetTimerMode(TimerMode),
+    SwitchProfile(String),
+    OpenProfilesFolder,
     TakeShortBreakNow,
     TakeLongBreakNow,
     OpenPreferences,
@@ -30,6 +32,8 @@ pub struct TraySnapshot {
     pub long_break_seconds: u64,
     pub timer_mode: TimerMode,
     pub idle_reset_seconds: u64,
+    pub profiles: Vec<FocusProfile>,
+    pub active_profile_id: String,
 }
 
 pub struct SafeEyesTray {
@@ -67,7 +71,7 @@ impl SafeEyesTray {
 
     fn send(&self, cmd: TrayCommand) {
         if let Err(err) = self.tx.send_blocking(cmd) {
-            warn!("failed to send tray command {cmd:?}: {err}");
+            warn!("failed to send tray command {:?}: {err}", err.0);
         }
     }
 }
@@ -166,6 +170,55 @@ impl Tray for SafeEyesTray {
             .into(),
         );
 
+        let active_profile_idx = self
+            .snapshot
+            .profiles
+            .iter()
+            .position(|p| p.id == self.snapshot.active_profile_id)
+            .unwrap_or(0);
+        let active_profile_name = self
+            .snapshot
+            .profiles
+            .get(active_profile_idx)
+            .map(|p| p.name.as_str())
+            .unwrap_or("Default");
+
+        let mut focus_submenu: Vec<MenuItem<Self>> = Vec::new();
+        if !self.snapshot.profiles.is_empty() {
+            let options = self
+                .snapshot
+                .profiles
+                .iter()
+                .map(|p| RadioItem {
+                    label: p.name.clone(),
+                    ..Default::default()
+                })
+                .collect();
+            focus_submenu.push(
+                RadioGroup {
+                    selected: active_profile_idx,
+                    select: Box::new(|this: &mut Self, current| {
+                        if let Some(profile) = this.snapshot.profiles.get(current) {
+                            let id = profile.id.clone();
+                            this.send(TrayCommand::SwitchProfile(id));
+                        }
+                    }),
+                    options,
+                }
+                .into(),
+            );
+            focus_submenu.push(MenuItem::Separator);
+        }
+        focus_submenu.push(
+            StandardItem {
+                label: "Open profiles folder".to_string(),
+                icon_name: "folder-open".to_string(),
+                activate: Box::new(|this: &mut Self| this.send(TrayCommand::OpenProfilesFolder)),
+                ..Default::default()
+            }
+            .into(),
+        );
+
         let mut items: Vec<MenuItem<Self>> = vec![
             StandardItem {
                 label: self.snapshot.status_line.clone(),
@@ -204,6 +257,13 @@ impl Tray for SafeEyesTray {
             }
             .into(),
             MenuItem::Separator,
+            SubMenu {
+                label: format!("Focus mode ({active_profile_name})"),
+                icon_name: "view-list-symbolic".to_string(),
+                submenu: focus_submenu,
+                ..Default::default()
+            }
+            .into(),
             SubMenu {
                 label: "Timer mode".to_string(),
                 icon_name: "preferences-system-time".to_string(),
