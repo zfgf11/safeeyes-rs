@@ -114,3 +114,7 @@ After editing `config.toml`, apply changes immediately via **Settings → Reload
 ## License
 
 [MIT](LICENSE)
+
+---
+
+*Note: This project was developed with substantial AI assistance for code generation, refactoring, and packaging.*

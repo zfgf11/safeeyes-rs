@@ -236,14 +236,9 @@ fn build_overlay_window(
     countdown_label.set_halign(Align::Center);
     countdown_label.add_css_class("safeeyes-countdown");
 
-    let subtitle = Label::new(Some("Relax your eyes and breathe slowly"));
-    subtitle.set_halign(Align::Center);
-    subtitle.add_css_class("safeeyes-subtitle");
-
     hero.append(&badge);
     hero.append(&prompt_label);
     hero.append(&countdown_label);
-    hero.append(&subtitle);
 
     let bottom_spacer = GtkBox::new(Orientation::Vertical, 0);
     bottom_spacer.set_vexpand(true);

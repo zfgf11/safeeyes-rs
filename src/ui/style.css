@@ -65,13 +65,6 @@ window.safeeyes-overlay-window {
     margin-bottom: 4px;
 }
 
-.safeeyes-subtitle {
-    color: rgba(244, 247, 251, 0.56);
-    font-size: 15px;
-    font-weight: 400;
-    margin-top: 6px;
-}
-
 .safeeyes-bottom-bar {
     background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
