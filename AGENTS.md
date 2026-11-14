@@ -21,7 +21,7 @@ Keep the familiar SafeEyes tray menu structure and UX:
 - **Status / Toggle:** Enable / Disable SafeEyes (plus timed disable options like *Disable for 15 min / 1 hour* if desired).
 - **Next Break Info:** Disabled menu entry showing when the next break is due.
 - **Take a break now:** Immediately triggers a break.
-- **Settings / Reload Config** & **Quit**.
+- **Settings / Preferences:** Native lazy-built GTK4 **Preferences...** window (`src/ui/settings.rs`), **Open config file**, **Reload config**, and **Quit**.
 
 ### 2. Fullscreen Break Overlay (Responsive, Apple-Style + GNOME Fallback)
 Must scale cleanly on **any screen size, DPI, or aspect ratio** (from small 13" laptop panels to ultrawide or 4K monitors) using responsive GTK4 layout containers (`gtk4::Overlay`, `gtk4::Box`, `hexpand`/`vexpand`, relative margins/CSS) — **never hardcode pixel coordinates or fixed window sizes**.
@@ -40,7 +40,7 @@ Must scale cleanly on **any screen size, DPI, or aspect ratio** (from small 13" 
   - **Large Apple-Style Countdown:** Display remaining time strictly as **total integer seconds** (e.g. `60`, `59`, ..., `15`, `14` — **NOT** `1:00` or `0:15`). Use very large, bold, clean sans-serif typography with `tabular-nums` (`font-variant-numeric: tabular-nums`) so digits never jitter while counting down.
 - **Bottom Area (Action Bar):**
   - Positioned relatively low near the bottom of the screen (`valign = Align::End`, bottom margin).
-  - **Skip Button** placed side-by-side with a subtle status label showing **`Skipped X/Y breaks`** (e.g., `Skipped 1/2 breaks`, based on configurable `max_skips`). Disable or hide the Skip button once the limit is reached.
+  - **Skip & Snooze Buttons** placed side-by-side with a subtle status label showing **`Skipped X/Y breaks`** (e.g., `Skipped 1/2 breaks`, based on configurable `max_skips`). Disable or hide the Skip/Snooze buttons once the limit is reached.
 - **Visual Polish:** Dark, calm, frosted/translucent aesthetic via GTK4 CSS, smooth visual hierarchy, and keyboard shortcuts (`Esc` to skip if skips remain).
 
 ## Architectural & Quality Rules
@@ -49,4 +49,4 @@ Must scale cleanly on **any screen size, DPI, or aspect ratio** (from small 13" 
 3. **Clean Separation:** Keep the state machine (`src/core/`), D-Bus/system integrations (`src/system/`), tray (`src/tray/`), and GTK4 overlay (`src/ui/`) decoupled.
 4. **Error Handling:** Avoid `.unwrap()` / `.expect()` in runtime paths; log errors cleanly with `tracing`.
 5. **Mandatory Verification:** Always run `cargo check` and `cargo clippy --all-targets` after changes and resolve all errors/warnings before finishing.
-6. **Release & Packaging Sync (COPR & AUR):** When releasing program changes, bump the version consistently across `Cargo.toml`, `packaging/safeeyes-rs.spec` (`Version` + `%changelog`), `packaging/aur/PKGBUILD` (`pkgver`), and `packaging/aur/.SRCINFO` (`pkgver` + `source` + `sha256sums`), then commit and tag `vX.Y.Z` so Fedora COPR can build `https://raw.githubusercontent.com/zfgf11/safeeyes-rs/vX.Y.Z/packaging/safeeyes-rs.spec`.
+6. **Release & Packaging Sync (COPR, AUR, GitHub Releases & Flatpak):** When releasing program changes, bump the version consistently across `Cargo.toml` (and refresh `Cargo.lock` via `cargo check`), `packaging/safeeyes-rs.spec` (`Version` + `%changelog`), `packaging/aur/PKGBUILD` (`pkgver`), `packaging/aur/.SRCINFO` (`pkgver` + `source` + `sha256sums`), and `packaging/flathub/io.github.zfgf11.safeeyes_rs.metainfo.xml` (`<releases>`). Commit and push `main` first, then push tag `vX.Y.Z` so GitHub Actions publishes `.deb`, `.rpm`, `.flatpak`, and `.tar.gz` artifacts and triggers COPR.
