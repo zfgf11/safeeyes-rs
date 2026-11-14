@@ -1,5 +1,5 @@
 Name:           safeeyes-rs
-Version:        0.1.6
+Version:        0.2.0
 Release:        1%{?dist}
 Summary:        Lightweight, native Wayland Rust rewrite of SafeEyes
 
@@ -41,6 +41,10 @@ cargo test --release --locked
 %{_datadir}/applications/%{name}.desktop
 
 %changelog
+* Sat Nov 14 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.2.0-1
+- Add Focus modes switcher in tray menu and GUI profile management in Preferences
+- Remove redundant break overlay subtitle text and add AI disclaimer to README
+
 * Fri Nov 13 2026 zfgf11 <zfgf11@users.noreply.github.com> - 0.1.6-1
 - Publish .flatpak bundle directly in GitHub Releases and document Flatpak install in README
 

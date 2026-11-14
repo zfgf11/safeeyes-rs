@@ -1,6 +1,6 @@
 [package]
 name = "safeeyes-rs"
-version = "0.1.6"
+version = "0.2.0"
 edition = "2024"
 description = "Lightweight, native Wayland Rust rewrite of SafeEyes for KDE Plasma and GNOME"
 license = "MIT"

@@ -64,6 +64,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.2.0" date="2026-11-14">
+      <description>
+        <p>Add Focus modes switcher in the system tray and profile management in Preferences, and simplify the break overlay.</p>
+      </description>
+    </release>
     <release version="0.1.6" date="2026-11-13">
       <description>
         <p>Publish downloadable .flatpak bundle directly in GitHub Releases.</p>
